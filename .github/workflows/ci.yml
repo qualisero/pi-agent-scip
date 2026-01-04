@@ -55,8 +55,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Uncomment to enable auto-publish on version bump
-      # - name: Publish
-      #   run: npm publish --access public
-      #   env:
-      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

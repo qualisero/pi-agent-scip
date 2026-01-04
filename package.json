@@ -2,9 +2,23 @@
   "name": "@qualisero/pi-agent-scip",
   "version": "0.1.0",
   "description": "SCIP code intelligence tools for pi-coding-agent",
+  "keywords": [
+    "pi",
+    "scip",
+    "code-intelligence",
+    "python"
+  ],
+  "homepage": "https://github.com/qualisero/pi-agent-scip#readme",
+  "bugs": {
+    "url": "https://github.com/qualisero/pi-agent-scip/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qualisero/pi-agent-scip.git"
+  },
+  "license": "Apache-2.0",
+  "author": "Dave dV",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,12 +29,17 @@
       "import": "./dist/hook.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
     "pi-agent-scip-status": "dist/cli/status.js"
   },
+  "directories": {
+    "test": "tests"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -w --preserveWatchOutput",
@@ -28,17 +47,6 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "prepublishOnly": "npm run build && npm test"
-  },
-  "keywords": [
-    "pi",
-    "scip",
-    "code-intelligence",
-    "python"
-  ],
-  "author": "",
-  "license": "Apache-2.0",
-  "engines": {
-    "node": ">=18"
   },
   "dependencies": {
     "@sinclair/typebox": "^0.34.46",
@@ -53,5 +61,8 @@
   },
   "peerDependencies": {
     "@mariozechner/pi-coding-agent": ">=0.33.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
