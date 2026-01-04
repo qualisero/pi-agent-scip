@@ -1,23 +1,19 @@
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
-
-// Lightweight type definitions to avoid importing internal hook types at build time.
-interface HookContextLite {
-  cwd: string;
-  tools?: { name?: string }[];
-  addSystemMessage(message: string): void;
-}
-
-export type HookFactory = (pi: {
-  on(event: 'session_start', handler: (event: unknown, ctx: HookContextLite) => void | Promise<void>): void;
-}) => void;
+import type { HookAPI } from '@mariozechner/pi-coding-agent';
 
 interface DetectedLanguages {
   python: boolean;
   typescript: boolean;
 }
 
+// Cache detected languages per cwd to avoid re-scanning on every agent start
+const languageCache = new Map<string, DetectedLanguages>();
+
 async function detectLanguages(cwd: string): Promise<DetectedLanguages> {
+  const cached = languageCache.get(cwd);
+  if (cached) return cached;
+
   const result: DetectedLanguages = { python: false, typescript: false };
 
   try {
@@ -85,18 +81,30 @@ async function detectLanguages(cwd: string): Promise<DetectedLanguages> {
     // Ignore errors, return defaults
   }
 
+  languageCache.set(cwd, result);
   return result;
 }
 
-const factory: HookFactory = (pi) => {
-  pi.on('session_start', async (_event, ctx) => {
+// Track whether we've already injected a message for this session
+let messageInjected = false;
+
+export default function (pi: HookAPI) {
+  // Reset flag on session start
+  pi.on('session_start', async () => {
+    messageInjected = false;
+  });
+
+  // Inject guidance message before the first agent turn
+  pi.on('before_agent_start', async (_event, ctx) => {
+    if (messageInjected) return;
+
     const languages = await detectLanguages(ctx.cwd);
     const hasAnyLanguage = languages.python || languages.typescript;
     if (!hasAnyLanguage) return;
 
-    const tools = ctx.tools ?? [];
-    const hasScip = tools.some((t) => t.name && t.name.startsWith('scip_'));
-    if (!hasScip) return;
+    // Check if scip tools are available by looking at session tools
+    // Note: We can't easily check tools here, so we inject the message
+    // and let the agent figure out if the tools are available
 
     const languageNames: string[] = [];
     if (languages.python) languageNames.push('Python');
@@ -104,12 +112,17 @@ const factory: HookFactory = (pi) => {
 
     const languageList = languageNames.join(' and ');
 
-    ctx.addSystemMessage(
-      `For this ${languageList} project, prefer the scip_* tools from @qualisero/pi-agent-scip for code navigation and structure: ` +
-        'use scip_find_definition, scip_find_references, scip_list_symbols, scip_search_symbols, and scip_project_tree ' +
-        'instead of ad-hoc text search or manual file scanning.',
-    );
-  });
-};
+    messageInjected = true;
 
-export default factory;
+    return {
+      message: {
+        customType: 'pi-agent-scip-hint',
+        content:
+          `For this ${languageList} project, prefer the scip_* tools from @qualisero/pi-agent-scip for code navigation and structure: ` +
+          'use scip_find_definition, scip_find_references, scip_list_symbols, scip_search_symbols, and scip_project_tree ' +
+          'instead of ad-hoc text search or manual file scanning.',
+        display: false, // Don't clutter the UI, just send to LLM
+      },
+    };
+  });
+}
