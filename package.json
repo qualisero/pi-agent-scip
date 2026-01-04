@@ -1,12 +1,14 @@
 {
   "name": "@qualisero/pi-agent-scip",
   "version": "0.1.0",
-  "description": "SCIP code intelligence tools for pi-coding-agent",
+  "description": "SCIP code intelligence tools for pi-coding-agent (Python, TypeScript/JavaScript)",
   "keywords": [
     "pi",
     "scip",
     "code-intelligence",
-    "python"
+    "python",
+    "typescript",
+    "javascript"
   ],
   "homepage": "https://github.com/qualisero/pi-agent-scip#readme",
   "bugs": {
