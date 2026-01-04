@@ -1,7 +1,7 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-export type LogLevel = 'info' | 'error';
+export type LogLevel = 'info' | 'warning' | 'error';
 
 export interface StructuredLogEvent {
   source: 'indexer' | 'tool';

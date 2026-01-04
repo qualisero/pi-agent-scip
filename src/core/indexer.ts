@@ -183,7 +183,60 @@ export class ScipIndexer {
   }
 
   private async ensureIndexDir() {
-    await fs.mkdir(join(this.projectRoot, '.scip'), { recursive: true });
+    const scipDir = join(this.projectRoot, '.scip');
+    const isFirstRun = !(await fs.access(scipDir).then(() => true).catch(() => false));
+    
+    await fs.mkdir(scipDir, { recursive: true });
+    
+    // On first run, ensure .scip is in .gitignore
+    if (isFirstRun) {
+      await this.ensureGitignore();
+    }
+  }
+
+  private async ensureGitignore() {
+    const gitignorePath = join(this.projectRoot, '.gitignore');
+    
+    try {
+      // Check if .git directory exists (i.e., this is a git repo)
+      const isGitRepo = await fs.access(join(this.projectRoot, '.git')).then(() => true).catch(() => false);
+      if (!isGitRepo) return;
+
+      let content = '';
+      let exists = false;
+      
+      try {
+        content = await fs.readFile(gitignorePath, 'utf-8');
+        exists = true;
+      } catch {
+        // .gitignore doesn't exist
+      }
+
+      // Check if .scip is already ignored (handles .scip, .scip/, /.scip, etc.)
+      const lines = content.split('\n');
+      const alreadyIgnored = lines.some(line => {
+        const trimmed = line.trim();
+        return trimmed === '.scip' || trimmed === '.scip/' || trimmed === '/.scip' || trimmed === '/.scip/';
+      });
+
+      if (!alreadyIgnored) {
+        const newEntry = '.scip/';
+        const newContent = exists 
+          ? (content.endsWith('\n') ? content + newEntry + '\n' : content + '\n' + newEntry + '\n')
+          : newEntry + '\n';
+        
+        await fs.writeFile(gitignorePath, newContent);
+        this.logger.log({ source: 'indexer', action: 'gitignore_updated', path: gitignorePath });
+      }
+    } catch (error) {
+      // Don't fail indexing if gitignore update fails
+      this.logger.log({
+        source: 'indexer',
+        action: 'gitignore_update_failed',
+        level: 'warning',
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   private async backupExistingIndex() {
