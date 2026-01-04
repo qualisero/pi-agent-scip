@@ -79,7 +79,7 @@ available.
 **Question (opt-in):**
 
 > Do you want me to update `~/.pi/agent/AGENTS.md` to add guidance for using the
-> SCIP tools in Python projects? (yes/no)
+> SCIP tools in Python and TypeScript/JavaScript projects? (yes/no)
 
 If you answer **yes**, the agent should:
 
@@ -87,13 +87,13 @@ If you answer **yes**, the agent should:
 2. Add or append a short paragraph along these lines:
 
    > When `@qualisero/pi-agent-scip` is installed and `scip_*` tools are available in a
-   > session, prefer them for understanding Python codebases:
+   > session, prefer them for understanding Python and TypeScript/JavaScript codebases:
    >
    > - Use `scip_find_definition` to locate symbol definitions.
    > - Use `scip_find_references` for impact analysis.
-   > - Use `scip_list_symbols` before reading a Python file line by line.
+   > - Use `scip_list_symbols` before reading a source file line by line.
    > - Use `scip_search_symbols` to find symbols by name.
-   > - Use `scip_project_tree` at the start of work on large/unfamiliar Python
+   > - Use `scip_project_tree` at the start of work on large/unfamiliar
    >   repos to get a structural overview.
 
 3. Keep any existing content unchanged.
@@ -104,7 +104,7 @@ If you answer **no**, skip this step.
 
 ## Step 3: Enable the pi-agent-scip hook (optional)
 
-**Goal:** On session start, automatically detect Python projects and inject a
+**Goal:** On session start, automatically detect Python and TypeScript/JavaScript projects and inject a
 system message that nudges the model to prefer the `scip_*` tools.
 
 The `pi-agent-scip` package ships a compiled hook at `dist/hook.js`.
@@ -139,5 +139,5 @@ If you answer **no**, skip this step.
 
 After completing the steps above, the agent should confirm:
 
-> pi-agent-scip integration complete. Restart pi in any Python project to use the
+> pi-agent-scip integration complete. Restart pi in any Python or TypeScript/JavaScript project to use the
 > new SCIP tools.

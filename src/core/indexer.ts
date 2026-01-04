@@ -11,6 +11,10 @@ export interface GenerateOptions {
   confirmInstall?: (message: string) => Promise<boolean>;
 }
 
+// Supported source file extensions for reindex detection
+const SOURCE_EXTENSIONS = new Set(['.py', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
+const IGNORE_DIRS = new Set(['.git', 'node_modules', '.scip', '.venv', '.poetry', 'dist', 'build', 'out']);
+
 export class ScipIndexer {
   private readonly indexPath: string;
   private readonly registry: LanguageRegistry;
@@ -106,9 +110,15 @@ export class ScipIndexer {
   private async findNewestSourceMtime(root: string): Promise<number | null> {
     let newest: number | null = null;
 
-    const entries = await fs.readdir(root, { withFileTypes: true });
+    let entries;
+    try {
+      entries = await fs.readdir(root, { withFileTypes: true });
+    } catch {
+      return null;
+    }
+
     for (const entry of entries) {
-      if (entry.name === '.git' || entry.name === 'node_modules' || entry.name === '.scip' || entry.name === '.venv' || entry.name === '.poetry') {
+      if (IGNORE_DIRS.has(entry.name) || entry.name.startsWith('.')) {
         continue;
       }
 
@@ -118,16 +128,25 @@ export class ScipIndexer {
         if (childNewest !== null && (newest === null || childNewest > newest)) {
           newest = childNewest;
         }
-      } else if (entry.isFile() && fullPath.endsWith('.py')) {
-        const stat = await fs.stat(fullPath);
-        const mtime = stat.mtimeMs;
-        if (newest === null || mtime > newest) {
-          newest = mtime;
+      } else if (entry.isFile()) {
+        const ext = this.getExtension(entry.name);
+        if (SOURCE_EXTENSIONS.has(ext)) {
+          const stat = await fs.stat(fullPath);
+          const mtime = stat.mtimeMs;
+          if (newest === null || mtime > newest) {
+            newest = mtime;
+          }
         }
       }
     }
 
     return newest;
+  }
+
+  private getExtension(filename: string): string {
+    const lastDot = filename.lastIndexOf('.');
+    if (lastDot === -1) return '';
+    return filename.slice(lastDot);
   }
 
   private async runAdapter(adapter: LanguageAdapter, options: GenerateOptions) {
