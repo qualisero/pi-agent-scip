@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
+import { scip } from '@sourcegraph/scip-typescript/dist/src/scip.js';
 import { LanguageRegistry } from '../languages/registry.js';
 import type { LanguageAdapter } from '../languages/base.js';
 import { StructuredLogger } from './logger.js';
@@ -69,8 +70,31 @@ export class ScipIndexer {
       await this.ensureIndexDir();
       await this.backupExistingIndex();
 
-      for (const adapter of adapters) {
-        await this.runAdapter(adapter, options);
+      // If only one adapter, write directly to the output path
+      if (adapters.length === 1) {
+        await this.runAdapter(adapters[0], options, this.indexPath);
+      } else {
+        // Multiple adapters: write to temp files, then merge
+        const tempPaths: string[] = [];
+        try {
+          for (let i = 0; i < adapters.length; i++) {
+            const tempPath = `${this.indexPath}.${adapters[i].name}.tmp`;
+            tempPaths.push(tempPath);
+            await this.runAdapter(adapters[i], options, tempPath);
+          }
+          
+          // Merge all indexes
+          await this.mergeIndexes(tempPaths, this.indexPath);
+        } finally {
+          // Clean up temp files
+          for (const tempPath of tempPaths) {
+            try {
+              await fs.unlink(tempPath);
+            } catch {
+              // Ignore cleanup errors
+            }
+          }
+        }
       }
 
       this.logger.log({ source: 'indexer', action: 'generate_index_complete' });
@@ -83,6 +107,61 @@ export class ScipIndexer {
       });
       throw error;
     }
+  }
+
+  private async mergeIndexes(inputPaths: string[], outputPath: string): Promise<void> {
+    const allDocuments: any[] = [];
+    const seenPaths = new Set<string>();
+    let metadata: any = null;
+    const externalSymbols: any[] = [];
+
+    for (const inputPath of inputPaths) {
+      try {
+        const data = await fs.readFile(inputPath);
+        const index = scip.Index.deserializeBinary(data);
+        
+        // Keep first metadata
+        if (!metadata && index.metadata) {
+          metadata = index.metadata;
+        }
+        
+        // Merge documents (avoid duplicates by path)
+        for (const doc of index.documents || []) {
+          const path = doc.relative_path || '';
+          if (!seenPaths.has(path)) {
+            seenPaths.add(path);
+            allDocuments.push(doc);
+          }
+        }
+        
+        // Merge external symbols
+        for (const sym of index.external_symbols || []) {
+          externalSymbols.push(sym);
+        }
+      } catch (error) {
+        // Skip indexes that can't be read
+        this.logger.log({
+          source: 'indexer',
+          action: 'merge_skip',
+          path: inputPath,
+          level: 'warning',
+          message: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    const mergedIndex = new scip.Index({
+      metadata,
+      documents: allDocuments,
+      external_symbols: externalSymbols,
+    });
+
+    await fs.writeFile(outputPath, Buffer.from(mergedIndex.serializeBinary()));
+    this.logger.log({
+      source: 'indexer',
+      action: 'merge_complete',
+      documents: allDocuments.length,
+    });
   }
 
   async needsReindex(): Promise<boolean> {
@@ -149,7 +228,7 @@ export class ScipIndexer {
     return filename.slice(lastDot);
   }
 
-  private async runAdapter(adapter: LanguageAdapter, options: GenerateOptions) {
+  private async runAdapter(adapter: LanguageAdapter, options: GenerateOptions, outputPath: string) {
     options.onProgress?.(`Detected ${adapter.name} project`);
     this.logger.log({ source: 'indexer', action: 'adapter_start', adapter: adapter.name });
 
@@ -164,7 +243,7 @@ export class ScipIndexer {
     try {
       await adapter.generateIndex({
         projectRoot: this.projectRoot,
-        outputPath: this.indexPath,
+        outputPath,
         incremental: options.incremental,
         signal: options.signal,
         onProgress: options.onProgress,

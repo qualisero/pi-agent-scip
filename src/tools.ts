@@ -316,15 +316,30 @@ export const createScipTools: CustomToolFactory = (pi) => {
 
         await ensureIndex(toolName, signal, emitProgress);
 
-        const tree = await query.buildProjectTree();
-        logger.log({ source: 'tool', action: 'query_complete', tool: toolName, modules: tree.length });
+        const runQuery = async () => {
+          const tree = await query.buildProjectTree();
+          logger.log({ source: 'tool', action: 'query_complete', tool: toolName, modules: tree.length });
 
-        const rendered = renderTree(tree, depth);
+          const rendered = renderTree(tree, depth);
 
-        return {
-          content: [{ type: 'text' as const, text: rendered }],
-          details: tree,
+          return {
+            content: [{ type: 'text' as const, text: rendered }],
+            details: tree,
+          };
         };
+
+        try {
+          return await runQuery();
+        } catch (error) {
+          if (error instanceof NeedsReindexError) {
+            logger.log({ source: 'tool', action: 'index_stale', tool: toolName });
+            emitProgress('SCIP index is outdated. Regenerating...');
+            await runIndexGeneration(toolName, signal, emitProgress);
+            return runQuery();
+          }
+
+          throw error;
+        }
       },
     },
   ];

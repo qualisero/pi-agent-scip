@@ -223,7 +223,7 @@ export class ScipQuery {
 
     for (const document of documents) {
       const relativePath = document?.relative_path ?? '';
-      if (!relativePath.endsWith('.py')) continue;
+      if (!this.isSupportedFile(relativePath)) continue;
 
       const moduleName = this.pathToModuleName(relativePath);
       let moduleNode = modules.get(moduleName);
@@ -309,10 +309,17 @@ export class ScipQuery {
     return Array.from(modules.values());
   }
 
+  private isSupportedFile(path: string): boolean {
+    const supportedExtensions = ['.py', '.ts', '.tsx', '.js', '.jsx', '.vue', '.mts', '.cts', '.mjs', '.cjs'];
+    return supportedExtensions.some(ext => path.endsWith(ext));
+  }
+
   private pathToModuleName(path: string): string {
-    const withoutExt = path.replace(/\.py$/, '');
+    // Remove common extensions for Python, TypeScript, JavaScript, Vue
+    const withoutExt = path.replace(/\.(py|ts|tsx|js|jsx|vue|mts|cts|mjs|cjs)$/, '');
     const parts = withoutExt.split(/[\\/]+/);
-    if (parts[0] === 'src') {
+    // Remove common source directory prefixes
+    if (parts[0] === 'src' || parts[0] === 'lib') {
       parts.shift();
     }
     return parts.join('.');
