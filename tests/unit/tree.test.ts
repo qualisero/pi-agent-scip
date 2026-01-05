@@ -49,6 +49,38 @@ function createIndex(projectRoot: string) {
   writeFileSync(join(projectRoot, '.scip', 'index.scip'), Buffer.from(data));
 }
 
+function createTsIndex(projectRoot: string) {
+  const doc = new scip.Document({
+    relative_path: 'src/utils.ts',
+    occurrences: [
+      // Class MyService
+      new scip.Occurrence({
+        symbol: 'scip-typescript npm pkg 1.0.0 src/`utils.ts`/MyService#',
+        symbol_roles: scip.SymbolRole.Definition,
+        range: [0, 0],
+      }),
+      // Method fetchData inside MyService
+      new scip.Occurrence({
+        symbol: 'scip-typescript npm pkg 1.0.0 src/`utils.ts`/MyService#fetchData().',
+        symbol_roles: scip.SymbolRole.Definition,
+        range: [1, 4],
+      }),
+      // Top-level function
+      new scip.Occurrence({
+        symbol: 'scip-typescript npm pkg 1.0.0 src/`utils.ts`/formatDate().',
+        symbol_roles: scip.SymbolRole.Definition,
+        range: [5, 0],
+      }),
+    ],
+  });
+
+  const index = new scip.Index({ documents: [doc] });
+  const data = index.serializeBinary();
+
+  mkdirSync(join(projectRoot, '.scip'), { recursive: true });
+  writeFileSync(join(projectRoot, '.scip', 'index.scip'), Buffer.from(data));
+}
+
 describe('ScipQuery.buildProjectTree', () => {
   it('builds a simple module tree with classes and functions', async () => {
     const root = mkdtempSync(join(tmpdir(), 'pi-agent-scip-tree-'));
@@ -154,5 +186,82 @@ def helper():
     expect(utilsModule).toBeDefined();
     expect(appModule?.children.some((c) => c.name === 'main')).toBe(true);
     expect(utilsModule?.children.some((c) => c.name === 'util')).toBe(true);
+  });
+
+  it('handles TypeScript files with classes and functions', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'pi-agent-scip-tree-ts-'));
+    mkdirSync(join(root, 'src'));
+    writeFileSync(
+      join(root, 'src', 'utils.ts'),
+      `class MyService {
+  fetchData(): void {}
+}
+
+export function formatDate(date: Date): string {
+  return date.toISOString();
+}
+`,
+    );
+
+    createTsIndex(root);
+
+    const query = new ScipQuery(root);
+    const tree = await query.buildProjectTree();
+
+    expect(tree.length).toBe(1);
+    const moduleNode = tree[0];
+    expect(moduleNode.kind).toBe('Module');
+    expect(moduleNode.name).toBe('utils');
+    expect(moduleNode.file).toBe('src/utils.ts');
+
+    const classNode = moduleNode.children.find((c) => c.kind === 'Class');
+    const funcNode = moduleNode.children.find((c) => c.kind === 'Function');
+
+    expect(classNode?.name).toBe('MyService');
+    expect(funcNode?.name).toBe('formatDate');
+  });
+
+  it('handles Vue and JSX files', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'pi-agent-scip-tree-vue-'));
+    mkdirSync(join(root, 'src', 'components'), { recursive: true });
+
+    // Create index with Vue and JSX files
+    const doc1 = new scip.Document({
+      relative_path: 'src/components/Header.vue',
+      occurrences: [
+        new scip.Occurrence({
+          symbol: 'scip-typescript npm pkg 1.0.0 src/components/`Header.vue`/setup().',
+          symbol_roles: scip.SymbolRole.Definition,
+          range: [0, 0],
+        }),
+      ],
+    });
+
+    const doc2 = new scip.Document({
+      relative_path: 'src/App.tsx',
+      occurrences: [
+        new scip.Occurrence({
+          symbol: 'scip-typescript npm pkg 1.0.0 src/`App.tsx`/App().',
+          symbol_roles: scip.SymbolRole.Definition,
+          range: [0, 0],
+        }),
+      ],
+    });
+
+    const index = new scip.Index({ documents: [doc1, doc2] });
+    mkdirSync(join(root, '.scip'), { recursive: true });
+    writeFileSync(join(root, '.scip', 'index.scip'), Buffer.from(index.serializeBinary()));
+
+    const query = new ScipQuery(root);
+    const tree = await query.buildProjectTree();
+
+    expect(tree.length).toBe(2);
+    const headerModule = tree.find((m) => m.name === 'components.Header');
+    const appModule = tree.find((m) => m.name === 'App');
+
+    expect(headerModule).toBeDefined();
+    expect(appModule).toBeDefined();
+    expect(headerModule?.file).toBe('src/components/Header.vue');
+    expect(appModule?.file).toBe('src/App.tsx');
   });
 });
