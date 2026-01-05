@@ -43,13 +43,27 @@ If you answer **yes**, the agent should:
 
 2. **If you choose `global`:**
 
-   a. Run:
+   a. Check if already installed and get current version:
+
+   ```bash
+   npm list -g @qualisero/pi-agent-scip 2>/dev/null | grep pi-agent-scip
+   ```
+
+   b. Check the latest available version:
+
+   ```bash
+   npm view @qualisero/pi-agent-scip version
+   ```
+
+   c. If not installed, or if the installed version is older than the latest, run:
 
    ```bash
    npm install -g @qualisero/pi-agent-scip
    ```
 
-   b. Create the symlink:
+   If already installed at the latest version, skip the install.
+
+   d. Create the symlink:
 
    ```bash
    mkdir -p ~/.pi/agent/tools

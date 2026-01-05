@@ -1,4 +1,4 @@
-# @qualisero/pi-agent-scip
+# pi-agent-scip
 
 SCIP-based code intelligence tools for [pi-coding-agent](https://github.com/mariozechner/pi). Provides fast, compiler-accurate navigation for **Python** and **TypeScript/JavaScript** projects using Sourcegraph's SCIP indexers under the hood.
 
