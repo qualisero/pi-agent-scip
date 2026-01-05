@@ -1,6 +1,6 @@
 {
   "name": "@qualisero/pi-agent-scip",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "SCIP code intelligence tools for pi-coding-agent (Python, TypeScript/JavaScript)",
   "keywords": [
     "pi",
