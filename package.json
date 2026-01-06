@@ -44,6 +44,7 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest watch",
+    "version": "node scripts/update-badge-timestamp.cjs && git add README.md",
     "prepublishOnly": "npm run build && npm test"
   },
   "dependencies": {
