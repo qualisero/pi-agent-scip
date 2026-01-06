@@ -17,10 +17,10 @@ and the agent should:
 
 ---
 
-## Step 1: Install or link @qualisero/pi-agent-scip as a global pi tool (**strongly recommended**)
+## Step 1: Install or link @qualisero/pi-agent-scip as a global pi extension (**strongly recommended**)
 
 **Goal:** Ensure the `scip_*` tools are discoverable by pi via the standard
-custom-tools location.
+extensions location.
 
 There are two common setups:
 
@@ -32,7 +32,7 @@ The agent can perform either, with explicit confirmation.
 **Question (opt-in):**
 
 > Do you want me to ensure `@qualisero/pi-agent-scip` is installed/linked as a global
-> pi tool under `~/.pi/agent/tools/scip`? (yes/no)
+> pi extension under `~/.pi/agent/extensions/pi-agent-scip.js`? (yes/no)
 
 If you answer **yes**, the agent should:
 
@@ -43,31 +43,17 @@ If you answer **yes**, the agent should:
 
 2. **If you choose `global`:**
 
-   a. Check if already installed and get current version:
-
-   ```bash
-   npm list -g @qualisero/pi-agent-scip 2>/dev/null | grep pi-agent-scip
-   ```
-
-   b. Check the latest available version:
-
-   ```bash
-   npm view @qualisero/pi-agent-scip version
-   ```
-
-   c. If not installed, or if the installed version is older than the latest, run:
+   a. Run:
 
    ```bash
    npm install -g @qualisero/pi-agent-scip
    ```
 
-   If already installed at the latest version, skip the install.
-
-   d. Create the symlink:
+   b. Create the symlink:
 
    ```bash
-   mkdir -p ~/.pi/agent/tools
-   ln -snf "$(npm root -g)/@qualisero/pi-agent-scip" ~/.pi/agent/tools/scip
+   mkdir -p ~/.pi/agent/extensions
+   ln -snf "$(npm root -g)/@qualisero/pi-agent-scip/dist/index.js" ~/.pi/agent/extensions/pi-agent-scip.js
    ```
 
 3. **If you choose `local`:**
@@ -77,8 +63,8 @@ If you answer **yes**, the agent should:
    b. Create the symlink:
 
    ```bash
-   mkdir -p ~/.pi/agent/tools
-   ln -snf "$(pwd)" ~/.pi/agent/tools/scip
+   mkdir -p ~/.pi/agent/extensions
+   ln -snf "$(pwd)/dist/index.js" ~/.pi/agent/extensions/pi-agent-scip.js
    ```
 
 If you answer **no**, the agent should skip this step.
@@ -116,42 +102,27 @@ If you answer **no**, skip this step.
 
 ---
 
-## Step 3: Enable the pi-agent-scip hook (optional)
-
-**Goal:** On session start, automatically detect Python and TypeScript/JavaScript projects and inject a
-system message that nudges the model to prefer the `scip_*` tools.
-
-The `pi-agent-scip` package ships a compiled hook at `dist/hook.js`.
-
-**Question (opt-in):**
-
-> Do you want me to register the `pi-agent-scip` hook in `~/.pi/agent/settings.json`
-> so it runs on every pi session? (yes/no)
-
-If you answer **yes**, the agent should:
-
-1. Determine the absolute path to `dist/hook.js` in the current checkout.
-2. Open (or create) `~/.pi/agent/settings.json`.
-3. Ensure there is a `hooks` array that includes that path:
-
-   ```jsonc
-   {
-     "hooks": [
-       "/absolute/path/to/pi-agent-scip/dist/hook.js"
-     ]
-   }
-   ```
-
-   If `settings.json` already has other hooks or settings, preserve them and
-   only append the new hook path if not already present.
-
-If you answer **no**, skip this step.
-
----
-
 ## Done
 
 After completing the steps above, the agent should confirm:
 
 > pi-agent-scip integration complete. Restart pi in any Python or TypeScript/JavaScript project to use the
 > new SCIP tools.
+
+---
+
+## Migration from v0.2.x
+
+If you previously installed version 0.2.x with the old hook/tool setup:
+
+1. Remove old symlinks:
+   ```bash
+   rm ~/.pi/agent/tools/scip
+   rm ~/.pi/agent/hooks/pi-agent-scip-hook.js 2>/dev/null || true
+   ```
+
+2. Remove hook entry from `~/.pi/agent/settings.json` if present
+
+3. Follow Step 1 above to create the new extension symlink
+
+The extension automatically provides both the tools and the context injection that the old hook provided.
