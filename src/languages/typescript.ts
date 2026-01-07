@@ -104,7 +104,8 @@ export class TypeScriptAdapter implements LanguageAdapter {
     }
   }
 
-  private async detectWorkspaceFlags(projectRoot: string): Promise<string[]> {
+  /** @internal Exposed for testing */
+  async detectWorkspaceFlags(projectRoot: string): Promise<string[]> {
     // Check for pnpm workspaces
     try {
       await fs.access(join(projectRoot, 'pnpm-workspace.yaml'));
@@ -113,12 +114,25 @@ export class TypeScriptAdapter implements LanguageAdapter {
       // not pnpm
     }
 
-    // Check for yarn workspaces in package.json
+    // Check for workspaces in package.json
     try {
       const pkgPath = join(projectRoot, 'package.json');
       const content = await fs.readFile(pkgPath, 'utf-8');
       const pkg = JSON.parse(content);
       if (pkg.workspaces) {
+        // Check packageManager to determine how to handle workspaces
+        const pm = pkg.packageManager as string | undefined;
+        if (pm?.startsWith('bun')) {
+          // Bun workspaces: scip-typescript doesn't have native support,
+          // but works fine without flags (uses root tsconfig with includes)
+          return [];
+        }
+        if (pm?.startsWith('npm')) {
+          // npm workspaces: scip-typescript doesn't have --npm-workspaces,
+          // but works fine without flags (uses root tsconfig with includes)
+          return [];
+        }
+        // Yarn workspaces (explicit or assumed when packageManager is not set)
         return ['--yarn-workspaces'];
       }
     } catch {

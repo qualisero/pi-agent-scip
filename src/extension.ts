@@ -5,6 +5,14 @@ import type { ExtensionAPI } from '@mariozechner/pi-coding-agent';
 import { ScipIndexer } from './core/indexer.js';
 import { ScipQuery, NeedsReindexError, type CodeTreeNode } from './core/query.js';
 import { StructuredLogger } from './core/logger.js';
+import {
+  truncateHead,
+  buildTruncationNotice,
+  DEFAULT_MAX_LINES,
+  DEFAULT_MAX_BYTES,
+  formatSize,
+  type TruncationResult,
+} from './core/truncate.js';
 
 interface DetectedLanguages {
   python: boolean;
@@ -193,7 +201,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: 'scip_find_definition',
     label: 'SCIP: Find Definition',
-    description: 'Locate the definition of a symbol using SCIP indexes',
+    description: `Locate the definition of a symbol using SCIP indexes. Output is truncated to ${DEFAULT_MAX_LINES} lines or ${formatSize(DEFAULT_MAX_BYTES)} (whichever is hit first).`,
     parameters: Type.Object({
       symbol: Type.String({ description: 'Symbol to find (class, function, variable)' }),
       file: Type.Optional(Type.String({ description: 'Current file path (optional)' })),
@@ -243,9 +251,13 @@ export default function (pi: ExtensionAPI) {
           return `${r.file}${locationStr}`;
         });
 
+        const output = lines.join('\n');
+        const truncation = truncateHead(output);
+        const finalOutput = truncation.content + buildTruncationNotice(truncation, toolName);
+
         return {
-          content: [{ type: 'text' as const, text: lines.join('\n') }],
-          details: results,
+          content: [{ type: 'text' as const, text: finalOutput }],
+          details: truncation.truncated ? { results, truncation } : results,
         };
       };
 
@@ -267,7 +279,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: 'scip_find_references',
     label: 'SCIP: Find References',
-    description: 'Find all references to a symbol across the project',
+    description: `Find all references to a symbol across the project. Output is truncated to ${DEFAULT_MAX_LINES} lines or ${formatSize(DEFAULT_MAX_BYTES)} (whichever is hit first).`,
     parameters: Type.Object({
       symbol: Type.String({ description: 'Symbol name to search for' }),
       limit: Type.Optional(
@@ -322,9 +334,13 @@ export default function (pi: ExtensionAPI) {
           return `${r.file}${locationStr}`;
         });
 
+        const output = lines.join('\n');
+        const truncation = truncateHead(output);
+        const finalOutput = truncation.content + buildTruncationNotice(truncation, toolName);
+
         return {
-          content: [{ type: 'text' as const, text: lines.join('\n') }],
-          details: results,
+          content: [{ type: 'text' as const, text: finalOutput }],
+          details: truncation.truncated ? { results, truncation } : results,
         };
       };
 
@@ -346,7 +362,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: 'scip_list_symbols',
     label: 'SCIP: List Symbols',
-    description: 'List all symbols defined in a single file',
+    description: `List all symbols defined in a single file. Output is truncated to ${DEFAULT_MAX_LINES} lines or ${formatSize(DEFAULT_MAX_BYTES)} (whichever is hit first).`,
     parameters: Type.Object({
       file: Type.String({ description: 'Relative file path within the project' }),
     }),
@@ -389,9 +405,13 @@ export default function (pi: ExtensionAPI) {
 
         const lines = symbols.map((s) => `${s.kind}: ${s.name}`);
 
+        const output = lines.join('\n');
+        const truncation = truncateHead(output);
+        const finalOutput = truncation.content + buildTruncationNotice(truncation, toolName);
+
         return {
-          content: [{ type: 'text' as const, text: lines.join('\n') }],
-          details: symbols,
+          content: [{ type: 'text' as const, text: finalOutput }],
+          details: truncation.truncated ? { symbols, truncation } : symbols,
         };
       };
 
@@ -413,7 +433,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: 'scip_search_symbols',
     label: 'SCIP: Search Symbols',
-    description: 'Search for symbols by (partial) name across the project',
+    description: `Search for symbols by (partial) name across the project. Output is truncated to ${DEFAULT_MAX_LINES} lines or ${formatSize(DEFAULT_MAX_BYTES)} (whichever is hit first).`,
     parameters: Type.Object({
       query: Type.String({ description: 'Substring to match against symbol names' }),
       limit: Type.Optional(
@@ -468,9 +488,13 @@ export default function (pi: ExtensionAPI) {
           return `${r.kind}: ${r.name} (${r.file}${locationStr})`;
         });
 
+        const output = lines.join('\n');
+        const truncation = truncateHead(output);
+        const finalOutput = truncation.content + buildTruncationNotice(truncation, toolName);
+
         return {
-          content: [{ type: 'text' as const, text: lines.join('\n') }],
-          details: results,
+          content: [{ type: 'text' as const, text: finalOutput }],
+          details: truncation.truncated ? { results, truncation } : results,
         };
       };
 
@@ -519,7 +543,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: 'scip_project_tree',
     label: 'SCIP: Project Tree',
-    description: 'Summarize the code structure of the current project as a tree',
+    description: `Summarize the code structure of the current project as a tree. Output is truncated to ${DEFAULT_MAX_LINES} lines or ${formatSize(DEFAULT_MAX_BYTES)} (whichever is hit first).`,
     parameters: Type.Object({
       depth: Type.Optional(
         Type.Number({ description: 'Maximum tree depth for text output', default: 3, minimum: 1, maximum: 10 }),
@@ -551,10 +575,12 @@ export default function (pi: ExtensionAPI) {
         logger.log({ source: 'tool', action: 'query_complete', tool: toolName, modules: tree.length });
 
         const rendered = renderTree(tree, depth);
+        const truncation = truncateHead(rendered);
+        const finalOutput = truncation.content + buildTruncationNotice(truncation, toolName);
 
         return {
-          content: [{ type: 'text' as const, text: rendered }],
-          details: tree,
+          content: [{ type: 'text' as const, text: finalOutput }],
+          details: truncation.truncated ? { tree, truncation } : tree,
         };
       };
 
@@ -569,6 +595,46 @@ export default function (pi: ExtensionAPI) {
         }
 
         throw error;
+      }
+    },
+  });
+
+  pi.registerTool({
+    name: 'scip_reindex',
+    label: 'SCIP: Reindex',
+    description: 'Regenerate the SCIP index for the project (use when code has changed significantly)',
+    parameters: Type.Object({}),
+    async execute(toolCallId, params, onUpdate, ctx, signal) {
+      const toolName = 'scip_reindex';
+      ensureCwd(ctx);
+
+      logger.log({
+        source: 'tool',
+        action: 'execute',
+        tool: toolName,
+      });
+
+      const emitProgress = (text: string) => {
+        onUpdate?.({
+          content: [{ type: 'text' as const, text }],
+          details: {},
+        });
+      };
+
+      emitProgress('Regenerating SCIP index...');
+
+      try {
+        await runIndexGeneration(toolName, signal, emitProgress);
+        return {
+          content: [{ type: 'text' as const, text: 'SCIP index regenerated successfully.' }],
+          details: { success: true },
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return {
+          content: [{ type: 'text' as const, text: `Failed to regenerate index: ${message}` }],
+          details: { success: false, error: message },
+        };
       }
     },
   });
