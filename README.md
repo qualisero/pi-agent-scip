@@ -16,10 +16,10 @@ All of this works **inside pi**, driven by the extension. You rarely need to cal
 
 ---
 
-## Contributors
+#### Contributors
 
-- **Dave** (david@qualisero.com) - Core development and maintenance
-- **Austin** (31991302+austinm911@users.noreply.github.com) - Contributions
+<a href="https://github.com/zedrdave" title="@zedrdave"><img src="https://github.com/zedrdave.png" width="50" height="50" alt="@zedrdave" /></a>
+<a href="https://github.com/austinm911" title="@austinm911"><img src="https://github.com/austinm911.png" width="50" height="50" alt="@austinm911" /></a>
 
 ---
 
