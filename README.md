@@ -16,6 +16,13 @@ All of this works **inside pi**, driven by the extension. You rarely need to cal
 
 ---
 
+## Contributors
+
+- **Dave** (david@qualisero.com) - Core development and maintenance
+- **Austin** (31991302+austinm911@users.noreply.github.com) - Contributions
+
+---
+
 ## 1. Quick start
 
 ### Global Installation (Recommended)
