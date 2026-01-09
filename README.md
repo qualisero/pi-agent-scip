@@ -2,7 +2,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@qualisero/pi-agent-scip.svg?t=1767701438904)](https://www.npmjs.com/package/@qualisero/pi-agent-scip)
 
-Add Code Intelligence `tools` to [pi-coding-agent](https://github.com/mariozechner/pi). Provides fast, compiler-accurate navigation and code overview for **Python** and **TypeScript/JavaScript** projects using Sourcegraph's SCIP indexers under the hood.
+Add Code Intelligence `tools` to [pi-coding-agent](https://github.com/badlogic/pi-mono). Provides fast, compiler-accurate navigation and code overview for **Python** and **TypeScript/JavaScript** projects using Sourcegraph's SCIP indexers under the hood.
 
 Once installed globally and registered as a pi extension, the agent can automatically:
 
