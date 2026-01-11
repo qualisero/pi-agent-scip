@@ -7,15 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.1] - 2026-01-11
 
+### Fixed
+- Added `"pi"` field to package.json to enable automatic extension discovery when symlinked to `~/.pi/agent/extensions/`
+- Updated installation instructions to symlink the package directory (not just dist/index.js) for proper module resolution
+
 ### Changed
 - Updated `@mariozechner/pi-coding-agent` from 0.37.2 to 0.37.8
 - Updated `@sinclair/typebox` from 0.34.46 to 0.34.47
 - Updated `@types/node` from 25.0.3 to 25.0.6
 - Updated `peerDependencies` to require `>=0.37.0` (was `>=0.35.0`)
 
-### Maintenance
+### Added
 - Added CHANGELOG.md to track version changes
-- All tests passing with updated dependencies
+
+### Installation Note
+If you previously installed v0.3.0, update your symlink:
+```bash
+rm ~/.pi/agent/extensions/pi-agent-scip.js  # Remove old file symlink
+ln -s $(npm root -g)/@qualisero/pi-agent-scip ~/.pi/agent/extensions/pi-agent-scip
+```
 
 ## [0.3.0] - 2026-01-07
 
