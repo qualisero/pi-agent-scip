@@ -63,5 +63,8 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "pi": {
+    "extensions": ["./dist/index.js"]
   }
 }
