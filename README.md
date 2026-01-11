@@ -33,7 +33,7 @@ npm install -g @qualisero/pi-agent-scip
 
 # Create symlink for pi to discover
 mkdir -p ~/.pi/agent/extensions
-ln -s $(npm root -g)/@qualisero/pi-agent-scip/dist/index.js ~/.pi/agent/extensions/pi-agent-scip.js
+ln -s $(npm root -g)/@qualisero/pi-agent-scip ~/.pi/agent/extensions/pi-agent-scip
 ```
 
 ### Project-Local Installation
@@ -44,7 +44,7 @@ npm install --save-dev @qualisero/pi-agent-scip
 
 # Link to local extensions directory
 mkdir -p .pi/extensions
-ln -s $(pwd)/node_modules/@qualisero/pi-agent-scip/dist/index.js .pi/extensions/pi-agent-scip.js
+ln -s $(pwd)/node_modules/@qualisero/pi-agent-scip .pi/extensions/pi-agent-scip
 ```
 
 ### One-Time Setup with PI_INSTRUCTIONS.md

@@ -22,6 +22,9 @@ and the agent should:
 **Goal:** Ensure the `scip_*` tools are discoverable by pi via the standard
 extensions location.
 
+**Note:** The symlink must point to the package directory (not dist/index.js) so pi can
+resolve the package.json with the `"pi"` field that declares the extension entry point.
+
 There are two common setups:
 
 - **Global npm install**
@@ -32,7 +35,7 @@ The agent can perform either, with explicit confirmation.
 **Question (opt-in):**
 
 > Do you want me to ensure `@qualisero/pi-agent-scip` is installed/linked as a global
-> pi extension under `~/.pi/agent/extensions/pi-agent-scip.js`? (yes/no)
+> pi extension under `~/.pi/agent/extensions/pi-agent-scip`? (yes/no)
 
 If you answer **yes**, the agent should:
 
@@ -49,22 +52,22 @@ If you answer **yes**, the agent should:
    npm install -g @qualisero/pi-agent-scip
    ```
 
-   b. Create the symlink:
+   b. Create the symlink (to the package directory, not just dist/index.js):
 
    ```bash
    mkdir -p ~/.pi/agent/extensions
-   ln -snf "$(npm root -g)/@qualisero/pi-agent-scip/dist/index.js" ~/.pi/agent/extensions/pi-agent-scip.js
+   ln -snf "$(npm root -g)/@qualisero/pi-agent-scip" ~/.pi/agent/extensions/pi-agent-scip
    ```
 
 3. **If you choose `local`:**
 
    a. Determine the absolute path of the current checkout (via `pwd`).
 
-   b. Create the symlink:
+   b. Create the symlink (to the package root):
 
    ```bash
    mkdir -p ~/.pi/agent/extensions
-   ln -snf "$(pwd)/dist/index.js" ~/.pi/agent/extensions/pi-agent-scip.js
+   ln -snf "$(pwd)" ~/.pi/agent/extensions/pi-agent-scip
    ```
 
 If you answer **no**, the agent should skip this step.
